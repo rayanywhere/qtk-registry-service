@@ -1,0 +1,32 @@
+{
+  "name": "@qtk/registry-service",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "directories": {
+    "test": "test"
+  },
+  "scripts": {
+    "test": "mocha"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/rayanywhere/qtk-registry-service.git"
+  },
+  "keywords": [
+    "registry"
+  ],
+  "author": "sophia,skip",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/rayanywhere/qtk-registry-service/issues"
+  },
+  "homepage": "https://github.com/rayanywhere/qtk-registry-service#readme",
+  "dependencies": {
+    "@qtk/schema-tcp-request-framework": "^1.0.2",
+    "fs-extra": "^5.0.0",
+    "log4js": "^2.4.1",
+    "mocha": "^4.0.1",
+    "opts": "^1.2.6"
+  }
+}
