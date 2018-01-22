@@ -1,6 +1,6 @@
 {
   "name": "@qtk/registry-service",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "",
   "main": "index.js",
   "directories": {
@@ -23,10 +23,10 @@
   },
   "homepage": "https://github.com/rayanywhere/qtk-registry-service#readme",
   "dependencies": {
-    "@qtk/schema-tcp-request-framework": "^1.0.2",
+    "@qtk/schema-tcp-request-framework": "^1.0.3",
     "fs-extra": "^5.0.0",
-    "log4js": "^2.4.1",
-    "mocha": "^4.0.1",
+    "log4js": "^2.5.2",
+    "mocha": "^4.1.0",
     "opts": "^1.2.6"
   }
 }
