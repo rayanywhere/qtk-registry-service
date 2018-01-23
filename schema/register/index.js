@@ -1,3 +1,5 @@
+const {object, string, integer, empty} = require('semantic-schema').describer;
+
 const info = {
     title: "注册server配置信息",
     author: "skip",
@@ -5,31 +7,13 @@ const info = {
     auth: false
 };
 
-const request = {
-    type: "object",
-    description: "注册server信息，包括名字，地址，端口，超时时间",
-    additionalProperties: false,
-    properties: {
-        name: {
-            type: "string",
-            description: "服务名"
-        },
-        host: {
-            type: "string",
-            description: "地址"
-        },
-        port: {
-            type : "integer",
-            description : `端口`
-        },
-        timeout: {
-            type : "integer",
-            description : `超时时间`
-        }
-    },
-    required: ["name", "host", "port", "timeout"]
-};
+const request = object().requiredAll().desc("注册server信息，包括名字，地址，端口，超时时间").properties({
+    name: string().desc("服务名"),
+    host: string().desc("地址"),
+    port: integer().desc("端口"),
+    timeout: integer().desc("超时时间")
+});
 
-const response = {};
+const response = empty();
 
 module.exports = {info, request, response};
