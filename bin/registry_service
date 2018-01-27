@@ -17,13 +17,6 @@ opts.parse([
         required: true
     },
     {
-        short: 't',
-        long: 'timeout',
-        description: 'maximum idle time of a connect client',
-        value: true,
-        required: false
-    },
-    {
         short: 'l',
         long: 'log',
         description: 'log directory',
@@ -35,7 +28,6 @@ opts.parse([
 let server = new Server({
     host: opts.get('host'),
     port:  parseInt(opts.get('port')),
-    timeout: (opts.get('timeout') == undefined) ? 30000 : parseInt(opts.get('timeout')),
-    log: (opts.get('log') === undefined) ? './logs/' : opts.get('log')
+    logPath: opts.get('log')
 })
 server.start();

@@ -7,7 +7,7 @@ const port = 10000;
 
 describe('#register-service', function() {
     before(function() {
-        let server = new Server({host, port, logPath: `${__dirname}/../logs`});
+        let server = new Server({host, port});
         server.start();
     })
 

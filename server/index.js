@@ -9,29 +9,32 @@ module.exports = class  {
 	constructor({host, port, logPath}) {
         log4js.configure({
             appenders: {
-                runtime: {
+                runtime: logPath ? {
                     type: 'dateFile',
                     filename: `${logPath}/`,
                     pattern: "yyyy-MM-dd.log",
                     alwaysIncludePattern: true
+                } : {
+                    type: 'console'
                 }
             },
             categories: {
-                default: { appenders: ['runtime'], level: "ALL" },
-                runtime: { appenders: ['runtime'], level: "ALL" }
+                default: { appenders: ['runtime'], level: "ALL" }
             }
         });
-        global.logger = log4js.getLogger('runtime');
-
+        
+        global.logger = log4js.getLogger();
         this._server = new Server({host: host, port: port});
         this._server.on("closed", (socket) => {
             if (manager.isPublisher(socket)) {
+                logger.info(`publisher(${socket.remoteAddress}:${socket.remotePort}) disconnected`);
                 const name = manager.getNameByPublisher(socket);
                 assert(name !== undefined, 'name should not be empty');
                 manager.removePublisher(socket);
                 this._notify(name);
             }
             else if (manager.isSubscriber(socket)) {
+                logger.info(`subscriber(${socket.remoteAddress}:${socket.remotePort}) disconnected`);
                 manager.removeSubscriber(socket);
             }
         });
@@ -64,15 +67,15 @@ module.exports = class  {
         assert(Number.isInteger(service.timeout), '[timeout] is expected to be an integer');
         assert(Number.isInteger(service.port), '[port] is expected to be an integer');
         assert(typeof service.host === 'string', '[host] is expected to be a string');
-        
+        logger.info(`publisher(${socket.remoteAddress}:${socket.remotePort}) engaged`);
         manager.addPublisher(name, {socket, service});
         this._notify(name);
     }
 
     _handleSubscribe(socket, name) {
         assert(typeof name === 'string', '[name] is expected to be a string');
+        logger.info(`subscriber(${socket.remoteAddress}:${socket.remotePort}) engaged`);
         manager.addSubscriber(name, socket);
-        
         const services = manager.getServicesByName(name);
         this._server.send(socket, {uuid: genuuid().replace(/-/g, ''), data: services});
     }
