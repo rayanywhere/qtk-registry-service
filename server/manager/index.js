@@ -1,33 +1,38 @@
-const name2publishers = new Map();
-const publisher2name = new Map();
-
 const name2subscribers = new Map();
 const subscriber2name = new Map();
 
+const services = new Map();
+
 module.exports = class {
-    static addPublisher(name, {socket, service}) {
-        if (!name2publishers.has(name)) {
-            name2publishers.set(name, new Map());
+    static addService(name, shard, service) {
+        if (!services.has(name)) {
+            services.set(name, new Map());
         }
-        name2publishers.get(name).set(socket, service);
-        publisher2name.set(socket, name);
+
+        services.get(name).set(shard, service);
     }
 
-    static removePublisher(socket) {
-        if (!publisher2name.has(socket)) {
+    static removeService(name, shard) {
+        if (!services.has(name)) {
             return;
         }
-        const name = publisher2name.get(socket);
-        publisher2name.delete(socket);
 
-        if (!name2publishers.has(name)) {
-            return;
-        }
-        name2publishers.get(name).delete(socket);
+        services.get(name).delete(shard);
     }
 
-    static isPublisher(socket) {
-        return publisher2name.has(socket);
+    static retrieveServices(name) {
+        if (!services.has(name)) {
+            return [];
+        }
+        const results = [];
+        for (const [shard, service] of services.get(name).entries()) {
+            results.push({shard, service});
+        }
+        return results;
+    }
+
+    static isSubscriber(socket) {
+        return subscriber2name.has(socket);
     }
 
     static addSubscriber(name, socket) {
@@ -52,26 +57,10 @@ module.exports = class {
         name2subscribers.get(name).delete(socket);
     }
 
-    static getSubscribersByName(name) {
+    static retrieveSubscribers(name) {
         if (!name2subscribers.has(name)) {
             return [];
         }
         return name2subscribers.get(name);
-    }
-
-    static isSubscriber(socket) {
-        return subscriber2name.has(socket);
-    }
-
-    static getNameByPublisher(socket) {
-        return publisher2name.get(socket);
-    }
-
-    static getServicesByName(name) {
-        const publishers = name2publishers.get(name);
-        if (publishers === undefined) {
-            return [];
-        }
-        return [...publishers.values()];
     }
 }

@@ -15,15 +15,14 @@ describe('#register-service', function() {
         it("should return without error", function(done) {
             const publisherClient = new PublisherClient({host, port});
             const subscriberClient = new SubscriberClient({host, port});
-            publisherClient.publish('Test.Service', {
-                shard: 0,
+            publisherClient.register('Test.Service', 0, {
                 host: 'localhost',
                 port: 8231
             });
 
             setTimeout(() => {
                 subscriberClient.on('update', (services) => {
-                    assert((services.length === 1) && (services[0].port === 8231), "service info mismatch");
+                    assert((services.length === 1) && (services[0].service.port === 8231), "service info mismatch");
                     done();
                 });
                 subscriberClient.subscribe('Test.Service');
@@ -46,7 +45,7 @@ describe('#register-service', function() {
         it("should return empty array followed by a non-empty services array", function(done) {
             const subscriberClient = new SubscriberClient({host, port});
             subscriberClient.on('update', (services) => {
-                if ((services.length > 0) && (services[0].port === 8231)) {
+                if ((services.length > 0) && (services[0].service.port === 8231)) {
                     done();
                 }
             });
@@ -54,11 +53,26 @@ describe('#register-service', function() {
 
             setTimeout(() => {
                 const publisherClient = new PublisherClient({host, port});
-                publisherClient.publish('Test.Service.Later', {
-                    shard: 0,
+                publisherClient.register('Test.Service.Later', 0, {
                     host: 'localhost',
                     port: 8231
                 });
+            }, 1000);
+        });
+    });
+
+    describe("testing unregister", function() {
+        it("should return empty array", function(done) {
+            const subscriberClient = new SubscriberClient({host, port});
+            subscriberClient.on('update', (services) => {
+                assert((services.length === 0), "service should be empty");
+                done();
+            });
+            subscriberClient.subscribe('Test.Service');
+
+            setTimeout(() => {
+                const publisherClient = new PublisherClient({host, port});
+                publisherClient.unregister('Test.Service', 0);
             }, 1000);
         });
     });

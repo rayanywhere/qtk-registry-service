@@ -26,14 +26,7 @@ module.exports = class  {
         global.logger = log4js.getLogger();
         this._server = new Server({host: host, port: port});
         this._server.on("closed", (socket) => {
-            if (manager.isPublisher(socket)) {
-                logger.info(`publisher(${socket.remoteAddress}:${socket.remotePort}) disconnected`);
-                const name = manager.getNameByPublisher(socket);
-                assert(name !== undefined, 'name should not be empty');
-                manager.removePublisher(socket);
-                this._notify(name);
-            }
-            else if (manager.isSubscriber(socket)) {
+            if (manager.isSubscriber(socket)) {
                 logger.info(`subscriber(${socket.remoteAddress}:${socket.remotePort}) disconnected`);
                 manager.removeSubscriber(socket);
             }
@@ -43,8 +36,11 @@ module.exports = class  {
         });
         this._server.on('data', (socket, {data: request}) => {
             switch(request.command) {
-                case 'publish':
-                    this._handlePublish(socket, request.name, request.service);
+                case 'register':
+                    this._handleRegister(request.name, request.shard, request.service);
+                    break;
+                case 'unregister':
+                    this._handleUnregister(request.name, request.shard);
                     break;
                 case 'subscribe':
                     this._handleSubscribe(socket, request.name);
@@ -60,29 +56,37 @@ module.exports = class  {
         this._server.start();
     }
 
-    _handlePublish(socket, name, service) {
+    _handleRegister(name, shard, service) {
         assert(typeof name === 'string', '[name] is expected to be a string');
+        assert(Number.isInteger(shard), '[shard] is expected to be an integer');
         assert(typeof service === 'object', '[service] is expected to be an object with form of {shard, host, port}');
-        assert(Number.isInteger(service.shard), '[shard] is expected to be an integer');
-        assert(Number.isInteger(service.port), '[port] is expected to be an integer');
-        assert(typeof service.host === 'string', '[host] is expected to be a string');
-        logger.info(`publisher(${socket.remoteAddress}:${socket.remotePort}) engaged`);
-        manager.addPublisher(name, {socket, service});
-        this._notify(name);
+        assert(Number.isInteger(service.port), '[service.port] is expected to be an integer');
+        assert(typeof service.host === 'string', '[service.host] is expected to be a string');
+        manager.addService(name, shard, service);
+        for(const socket of manager.retrieveSubscribers(name)) {
+            this._notify(socket, name);
+        }
+        logger.info(`shard(${shard})@${service.host}:${service.port} under name(${name}) registered`);
+    }
+
+    _handleUnregister(name, shard) {
+        assert(typeof name === 'string', '[name] is expected to be a string');
+        assert(Number.isInteger(shard), '[shard] is expected to be an integer');
+        manager.removeService(name, shard);
+        for(const socket of manager.retrieveSubscribers(name)) {
+            this._notify(socket, name);
+        }
+        logger.info(`shard(${shard}) under name(${name}) unregistered`);
     }
 
     _handleSubscribe(socket, name) {
-        assert(typeof name === 'string', '[name] is expected to be a string');
-        logger.info(`subscriber(${socket.remoteAddress}:${socket.remotePort}) engaged`);
         manager.addSubscriber(name, socket);
-        const services = manager.getServicesByName(name);
-        this._server.send(socket, {uuid: genuuid().replace(/-/g, ''), data: services});
+        this._notify(socket, name);
+        logger.info(`subscriber(${socket.remoteAddress}:${socket.remotePort}) connected`);
     }
 
-    _notify(name) {
-        const services = manager.getServicesByName(name);
-        for (const subscriber of manager.getSubscribersByName(name)) {
-            this._server.send(subscriber, {uuid: genuuid().replace(/-/g, ''), data: services});
-        }
+    _notify(socket, name) {
+        const services = manager.retrieveServices(name);
+        this._server.send(socket, {uuid: genuuid().replace(/-/g, ''), data: services});
     }
 };
