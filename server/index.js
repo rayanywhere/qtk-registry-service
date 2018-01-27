@@ -58,7 +58,7 @@ module.exports = class  {
 
     _handleRegister(name, shard, service) {
         assert(typeof name === 'string', '[name] is expected to be a string');
-        assert(Number.isInteger(shard), '[shard] is expected to be an integer');
+        assert(shard !== undefined, '[shard] is missing');
         assert(typeof service === 'object', '[service] is expected to be an object with form of {shard, host, port}');
         assert(Number.isInteger(service.port), '[service.port] is expected to be an integer');
         assert(typeof service.host === 'string', '[service.host] is expected to be a string');
@@ -71,7 +71,7 @@ module.exports = class  {
 
     _handleUnregister(name, shard) {
         assert(typeof name === 'string', '[name] is expected to be a string');
-        assert(Number.isInteger(shard), '[shard] is expected to be an integer');
+        assert(shard !== undefined, '[shard] is missing');
         manager.removeService(name, shard);
         for(const socket of manager.retrieveSubscribers(name)) {
             this._notify(socket, name);

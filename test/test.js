@@ -15,7 +15,7 @@ describe('#register-service', function() {
         it("should return without error", function(done) {
             const publisherClient = new PublisherClient({host, port});
             const subscriberClient = new SubscriberClient({host, port});
-            publisherClient.register('Test.Service', 0, {
+            publisherClient.register('Test.Service', "abc", {
                 host: 'localhost',
                 port: 8231
             });
@@ -53,7 +53,7 @@ describe('#register-service', function() {
 
             setTimeout(() => {
                 const publisherClient = new PublisherClient({host, port});
-                publisherClient.register('Test.Service.Later', 0, {
+                publisherClient.register('Test.Service.Later', "abc", {
                     host: 'localhost',
                     port: 8231
                 });
@@ -72,7 +72,7 @@ describe('#register-service', function() {
 
             setTimeout(() => {
                 const publisherClient = new PublisherClient({host, port});
-                publisherClient.unregister('Test.Service', 0);
+                publisherClient.unregister('Test.Service', "abc");
             }, 1000);
         });
     });
