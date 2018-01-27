@@ -1,58 +1,67 @@
 const Server = require('../server');
-const Client = require('../client');
+const PublisherClient = require('../client/publisher');
+const SubscriberClient = require('../client/subscriber');
 const assert = require('assert');
-const childProcess = require('child_process');
-const serverHost = "127.0.0.1";
-const serverPort = 10000;
+const host = "127.0.0.1";
+const port = 10000;
 
 describe('#register-service', function() {
-    let client = null;
-
-    before(async() => {
-        let server = new Server({
-            host: serverHost,
-            port: serverPort,
-            log: __dirname + "/../logs",
-            timeout: 30000
-        })
+    before(function() {
+        let server = new Server({host, port, logPath: `${__dirname}/../logs`});
         server.start();
-        client = new Client(serverHost, serverPort);
     })
 
-    describe("testing normal register / lookup flow", function() {
-        it("should return without error", async function() {
-            this.timeout(5000);
-            await client.register({
-                name: 'Test.Service',
+    describe("testing normal publish/subscribe flow", function() {
+        it("should return without error", function(done) {
+            const publisherClient = new PublisherClient({host, port});
+            const subscriberClient = new SubscriberClient({host, port});
+            publisherClient.publish('Test.Service', {
+                shard: 0,
                 host: 'localhost',
                 port: 8231,
                 timeout: 10000
             });
 
-            await sleep(200);
-
-            let config = await client.lookup('Test.Service');
-            assert(config.host === 'localhost' && config.port === 8231 && config.timeout === 10000, 'config mismatch');
+            setTimeout(() => {
+                subscriberClient.on('update', (services) => {
+                    assert((services.length === 1) && (services[0].port === 8231), "service info mismatch");
+                    done();
+                });
+                subscriberClient.subscribe('Test.Service');
+            }, 200);
         });
     });
 
-    describe("testing missing lookup", function() {
-        it("should return with error", async function() {
-            try {
-                await client.lookup('Test.Service.NotExists');
-            }
-            catch(err) {
-                return;
-            }
-            assert(false, 'should throw error');
+    describe("testing non-existing service", function() {
+        it("should return empty array", function(done) {
+            const subscriberClient = new SubscriberClient({host, port});
+            subscriberClient.on('update', (services) => {
+                assert((services.length === 0), "service should be empty");
+                done();
+            });
+            subscriberClient.subscribe('Test.Service1');
+        });
+    });
+
+    describe("testing subscribe-first situation", function() {
+        it("should return empty array followed by a non-empty services array", function(done) {
+            const subscriberClient = new SubscriberClient({host, port});
+            subscriberClient.on('update', (services) => {
+                if ((services.length > 0) && (services[0].port === 8231)) {
+                    done();
+                }
+            });
+            subscriberClient.subscribe('Test.Service.Later');
+
+            setTimeout(() => {
+                const publisherClient = new PublisherClient({host, port});
+                publisherClient.publish('Test.Service.Later', {
+                    shard: 0,
+                    host: 'localhost',
+                    port: 8231,
+                    timeout: 10000
+                });
+            }, 1000);
         });
     });
 });
-
-function sleep(millisecond) {
-    return new Promise((resolve, reject) => {
-        setTimeout(() => {
-            return resolve('');
-        }, millisecond)
-    })
-}

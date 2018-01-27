@@ -1,15 +1,17 @@
-const Server = require('@qtk/schema-tcp-request-framework').Server;
+const Server = require('@qtk/schema-tcp-framework').Server;
 const log4js = require('log4js');
 const path = require('path');
-const Cache = require('./lib/cache');
+const manager = require('./manager');
+const assert = require('assert');
+const genuuid = require('uuid/v4');
 
 module.exports = class  {
-	constructor({host, port, timeout, log}) {
+	constructor({host, port, logPath}) {
         log4js.configure({
             appenders: {
                 runtime: {
                     type: 'dateFile',
-                    filename: `${log}/`,
+                    filename: `${logPath}/`,
                     pattern: "yyyy-MM-dd.log",
                     alwaysIncludePattern: true
                 }
@@ -20,38 +22,65 @@ module.exports = class  {
             }
         });
         global.logger = log4js.getLogger('runtime');
-        global.cache = new Cache();
 
-        this.server = new Server({
-            host: host,
-            port: port,
-            handlerDir: `${__dirname}/handler`,
-            schemaDir: `${__dirname}/../schema`
-        }, []);
-
-        this.server.on("started", () => {
-            logger.info(`server started at ${host}:${port}`);
+        this._server = new Server({host: host, port: port});
+        this._server.on("closed", (socket) => {
+            if (manager.isPublisher(socket)) {
+                const name = manager.getNameByPublisher(socket);
+                assert(name !== undefined, 'name should not be empty');
+                manager.removePublisher(socket);
+                this._notify(name);
+            }
+            else if (manager.isSubscriber(socket)) {
+                manager.removeSubscriber(socket);
+            }
         });
-        
-        this.server.on("stopped", () => {
-            logger.info(`server stopped at ${host}:${port}`);
+        this._server.on("exception", (socket, error) => {
+            logger.error(`exception occurred at client(${socket.remoteAddress}:${socket.remotePort}): ${error.stack}`);
         });
-
-        this.server.on("connected", (socket) => {
-            logger.info(`client(${socket.remoteAddress}:${socket.remotePort}) connected`);
-        });
-
-        this.server.on("closed", (socket) => {
-            logger.info(`client(${socket.remoteAddress}:${socket.remotePort}) closed`);
-            cache.deleteBySocket(socket);
-        });
-
-        this.server.on("error", (error, socket) => {
-            logger.info(`error occurred at client(${socket.remoteAddress}:${socket.remotePort}): ${error.stack}`);
+        this._server.on('data', (socket, {data: request}) => {
+            switch(request.command) {
+                case 'publish':
+                    this._handlePublish(socket, request.name, request.service);
+                    break;
+                case 'subscribe':
+                    this._handleSubscribe(socket, request.name);
+                    break;
+                default:
+                    throw new Error(`unknown command: ${request.command}`);
+                    break;
+            }
         });
     }
 
     start() {
-        this.server.start();
+        this._server.start();
+    }
+
+    _handlePublish(socket, name, service) {
+        assert(typeof name === 'string', '[name] is expected to be a string');
+        assert(typeof service === 'object', '[service] is expected to be an object with form of {shard, host, port, timeout}');
+        assert(Number.isInteger(service.shard), '[shard] is expected to be an integer');
+        assert(Number.isInteger(service.timeout), '[timeout] is expected to be an integer');
+        assert(Number.isInteger(service.port), '[port] is expected to be an integer');
+        assert(typeof service.host === 'string', '[host] is expected to be a string');
+        
+        manager.addPublisher(name, {socket, service});
+        this._notify(name);
+    }
+
+    _handleSubscribe(socket, name) {
+        assert(typeof name === 'string', '[name] is expected to be a string');
+        manager.addSubscriber(name, socket);
+        
+        const services = manager.getServicesByName(name);
+        this._server.send(socket, {uuid: genuuid().replace(/-/g, ''), data: services});
+    }
+
+    _notify(name) {
+        const services = manager.getServicesByName(name);
+        for (const subscriber of manager.getSubscribersByName(name)) {
+            this._server.send(subscriber, {uuid: genuuid().replace(/-/g, ''), data: services});
+        }
     }
 };
