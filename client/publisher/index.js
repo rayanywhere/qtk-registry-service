@@ -10,7 +10,7 @@ module.exports = class extends EventEmitter {
         this._client = undefined;
     }
 
-    publish(name, {shard, host, port, timeout}) {
+    publish(name, {shard, host, port}) {
         if (this._client !== undefined) {
             throw new Error('cannot call publish function more than once');
         }
@@ -19,7 +19,7 @@ module.exports = class extends EventEmitter {
             this._client.send({uuid: genuuid().replace(/-/g, ''), data: {
                 command: 'publish',
                 name,
-                service: {shard, host, port, timeout}
+                service: {shard, host, port}
             }});
         });
     }

@@ -62,9 +62,8 @@ module.exports = class  {
 
     _handlePublish(socket, name, service) {
         assert(typeof name === 'string', '[name] is expected to be a string');
-        assert(typeof service === 'object', '[service] is expected to be an object with form of {shard, host, port, timeout}');
+        assert(typeof service === 'object', '[service] is expected to be an object with form of {shard, host, port}');
         assert(Number.isInteger(service.shard), '[shard] is expected to be an integer');
-        assert(Number.isInteger(service.timeout), '[timeout] is expected to be an integer');
         assert(Number.isInteger(service.port), '[port] is expected to be an integer');
         assert(typeof service.host === 'string', '[host] is expected to be a string');
         logger.info(`publisher(${socket.remoteAddress}:${socket.remotePort}) engaged`);

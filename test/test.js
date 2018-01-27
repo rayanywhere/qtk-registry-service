@@ -18,8 +18,7 @@ describe('#register-service', function() {
             publisherClient.publish('Test.Service', {
                 shard: 0,
                 host: 'localhost',
-                port: 8231,
-                timeout: 10000
+                port: 8231
             });
 
             setTimeout(() => {
@@ -58,8 +57,7 @@ describe('#register-service', function() {
                 publisherClient.publish('Test.Service.Later', {
                     shard: 0,
                     host: 'localhost',
-                    port: 8231,
-                    timeout: 10000
+                    port: 8231
                 });
             }, 1000);
         });
