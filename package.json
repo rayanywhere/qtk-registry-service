@@ -1,6 +1,6 @@
 {
   "name": "@qtk/registry-service",
-  "version": "2.0.5",
+  "version": "2.0.6",
   "description": "",
   "main": "index.js",
   "bin": {
@@ -31,6 +31,6 @@
     "log4js": "^2.5.2",
     "mocha": "^4.1.0",
     "opts": "^1.2.6",
-    "semantic-schema": "^0.1.9"
+    "semantic-schema": "^0.1.12"
   }
 }
