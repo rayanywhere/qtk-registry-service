@@ -13,66 +13,50 @@ describe('#register-service', function() {
 
     describe("testing normal publish/subscribe flow", function() {
         it("should return without error", function(done) {
-            const publisherClient = new PublisherClient({host, port});
-            const subscriberClient = new SubscriberClient({host, port});
-            publisherClient.register('Test.Service', "abc", {
+            const name = 'Test.Service';
+            const shard = 'abc';
+            new PublisherClient({host, port, name, shard, service: {
                 host: 'localhost',
                 port: 8231
-            });
+            }});
 
             setTimeout(() => {
+                const subscriberClient = new SubscriberClient({host, port, name});
                 subscriberClient.on('update', (services) => {
                     assert((services.length === 1) && (services[0].service.port === 8231), "service info mismatch");
                     done();
                 });
-                subscriberClient.subscribe('Test.Service');
             }, 200);
         });
     });
 
     describe("testing non-existing service", function() {
         it("should return empty array", function(done) {
-            const subscriberClient = new SubscriberClient({host, port});
+            const name = 'Test.Service1';
+            const subscriberClient = new SubscriberClient({host, port, name});
             subscriberClient.on('update', (services) => {
                 assert((services.length === 0), "service should be empty");
                 done();
             });
-            subscriberClient.subscribe('Test.Service1');
         });
     });
 
     describe("testing subscribe-first situation", function() {
         it("should return empty array followed by a non-empty services array", function(done) {
-            const subscriberClient = new SubscriberClient({host, port});
+            const name = 'Test.Service.Later';
+            const shard = 'abc';
+            const subscriberClient = new SubscriberClient({host, port, name});
             subscriberClient.on('update', (services) => {
                 if ((services.length > 0) && (services[0].service.port === 8231)) {
                     done();
                 }
             });
-            subscriberClient.subscribe('Test.Service.Later');
 
             setTimeout(() => {
-                const publisherClient = new PublisherClient({host, port});
-                publisherClient.register('Test.Service.Later', "abc", {
+                new PublisherClient({host, port, name, shard, service: {
                     host: 'localhost',
                     port: 8231
-                });
-            }, 1000);
-        });
-    });
-
-    describe("testing unregister", function() {
-        it("should return empty array", function(done) {
-            const subscriberClient = new SubscriberClient({host, port});
-            subscriberClient.on('update', (services) => {
-                assert((services.length === 0), "service should be empty");
-                done();
-            });
-            subscriberClient.subscribe('Test.Service');
-
-            setTimeout(() => {
-                const publisherClient = new PublisherClient({host, port});
-                publisherClient.unregister('Test.Service', "abc");
+                }});
             }, 1000);
         });
     });

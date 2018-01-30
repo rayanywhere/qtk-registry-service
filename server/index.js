@@ -39,9 +39,6 @@ module.exports = class  {
                 case 'register':
                     this._handleRegister(request.name, request.shard, request.service);
                     break;
-                case 'unregister':
-                    this._handleUnregister(request.name, request.shard);
-                    break;
                 case 'subscribe':
                     this._handleSubscribe(socket, request.name);
                     break;
@@ -67,16 +64,6 @@ module.exports = class  {
             this._notify(socket, name);
         }
         logger.info(`shard(${shard})@${service.host}:${service.port} under name(${name}) registered`);
-    }
-
-    _handleUnregister(name, shard) {
-        assert(typeof name === 'string', '[name] is expected to be a string');
-        assert(shard !== undefined, '[shard] is missing');
-        manager.removeService(name, shard);
-        for(const socket of manager.retrieveSubscribers(name)) {
-            this._notify(socket, name);
-        }
-        logger.info(`shard(${shard}) under name(${name}) unregistered`);
     }
 
     _handleSubscribe(socket, name) {
