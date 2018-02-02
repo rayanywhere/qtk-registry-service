@@ -18,5 +18,7 @@ module.exports = class extends EventEmitter {
         client.on('data', ({data: services}) => {
             this.emit('update', services);
         });
+        client.on('exception', (err) => console.log(err));
+
     }
 };

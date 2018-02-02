@@ -3,7 +3,7 @@ const PublisherClient = require('../client/publisher');
 const SubscriberClient = require('../client/subscriber');
 const assert = require('assert');
 const host = "127.0.0.1";
-const port = 10000;
+const port = 30000;
 
 describe('#register-service', function() {
     before(function() {
@@ -23,6 +23,7 @@ describe('#register-service', function() {
             setTimeout(() => {
                 const subscriberClient = new SubscriberClient({host, port, name});
                 subscriberClient.on('update', (services) => {
+										console.log(services);
                     assert((services.length === 1) && (services[0].service.port === 8231), "service info mismatch");
                     done();
                 });

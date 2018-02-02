@@ -1,9 +1,23 @@
 const name2subscribers = new Map();
 const subscriber2name = new Map();
 
+const publishers = new Map();
+
 const services = new Map();
 
 module.exports = class {
+    static addPublisher(socket, name, shard) {
+        publishers.set(socket, {name, shard});
+    }
+
+    static getPublisher(socket) {
+        return publishers.get(socket);
+    }
+
+    static removePublisher(socket) {
+        publishers.delete(socket);
+    }
+
     static addService(name, shard, service) {
         if (!services.has(name)) {
             services.set(name, new Map());

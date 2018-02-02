@@ -30,6 +30,17 @@ module.exports = class  {
                 logger.info(`subscriber(${socket.remoteAddress}:${socket.remotePort}) disconnected`);
                 manager.removeSubscriber(socket);
             }
+            else {
+                logger.info(`publisher(${socket.remoteAddress}:${socket.remotePort}) disconnected`);
+                const publisherInfo = manager.getPublisher(socket);
+                if (publisherInfo !== undefined) {
+                    manager.removePublisher(socket);
+                    manager.removeService(publisherInfo.name, publisherInfo.shard);
+                    for(const socket of manager.retrieveSubscribers(publisherInfo.name)) {
+                        this._notify(socket, publisherInfo.name);
+                    }
+                }
+            }
         });
         this._server.on("exception", (socket, error) => {
             logger.error(`exception occurred at client(${socket.remoteAddress}:${socket.remotePort}): ${error.stack}`);
@@ -37,7 +48,7 @@ module.exports = class  {
         this._server.on('data', (socket, {data: request}) => {
             switch(request.command) {
                 case 'register':
-                    this._handleRegister(request.name, request.shard, request.service);
+                    this._handleRegister(socket, request.name, request.shard, request.service);
                     break;
                 case 'subscribe':
                     this._handleSubscribe(socket, request.name);
@@ -53,12 +64,13 @@ module.exports = class  {
         this._server.start();
     }
 
-    _handleRegister(name, shard, service) {
+    _handleRegister(socket, name, shard, service) {
         assert(typeof name === 'string', '[name] is expected to be a string');
         assert(shard !== undefined, '[shard] is missing');
         assert(typeof service === 'object', '[service] is expected to be an object with form of {shard, host, port}');
         assert(Number.isInteger(service.port), '[service.port] is expected to be an integer');
         assert(typeof service.host === 'string', '[service.host] is expected to be a string');
+        manager.addPublisher(socket, name, shard);
         manager.addService(name, shard, service);
         for(const socket of manager.retrieveSubscribers(name)) {
             this._notify(socket, name);
@@ -74,6 +86,7 @@ module.exports = class  {
 
     _notify(socket, name) {
         const services = manager.retrieveServices(name);
+        logger.info(`pushing service(${JSON.stringify(services)}) under the name(${name}) to subscriber ${socket.remoteAddress}:${socket.remotePort}`);
         this._server.send(socket, {uuid: genuuid().replace(/-/g, ''), data: services});
     }
 };
