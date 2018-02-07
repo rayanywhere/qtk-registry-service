@@ -18,7 +18,7 @@ opts.parse([
     },
     {
         short: 'l',
-        long: 'log',
+        long: 'log-path',
         description: 'log directory',
         value: true,
         required: false
@@ -28,6 +28,6 @@ opts.parse([
 let server = new Server({
     host: opts.get('host'),
     port:  parseInt(opts.get('port')),
-    logPath: opts.get('log')
+    logPath: opts.get('log-path')
 })
 server.start();
