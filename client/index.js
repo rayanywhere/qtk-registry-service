@@ -1,4 +1,5 @@
 module.exports = {
     Subscriber: require('./subscriber'),
-    Publisher: require('./publisher')
+    Publisher: require('./publisher'),
+    Admin: require('./admin')
 };

@@ -9,7 +9,7 @@ module.exports = class {
         assert(Number.isInteger(service.port), 'service.port is expected to be an integer');
         client.on('connected', () => {
             client.send({uuid: genuuid().replace(/-/g, ''), data: {
-                command: 'register',
+                command: 'publish',
                 name,
                 service
             }});

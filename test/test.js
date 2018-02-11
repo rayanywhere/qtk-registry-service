@@ -1,7 +1,7 @@
 const Server = require('../server');
 const PublisherClient = require('../client/publisher');
 const SubscriberClient = require('../client/subscriber');
-const ManagerClient = require('../client/manager');
+const AdminClient = require('../client/admin');
 const assert = require('assert');
 const sleep = sec => new Promise(r => setTimeout(r, sec * 1000));
 const host = "127.0.0.1";
@@ -67,35 +67,27 @@ describe('#register-service', function() {
         });
     });
 
-    describe("testing management", function() {
-        let manager = new ManagerClient({host, port});
-        it("should list all service in time.", async function() {
-            let list = await manager.list();
-            assert(list.length == 2, `expect 2 services returned in list command`);
+    describe("testing admin functionalities", function() {
+        const adminClient = new AdminClient({host, port});
+        it("should return all entries.", async function() {
+            const entries = await adminClient.listEntries();
+            assert(entries.length == 2, `expect 2 entries returned`);
         });
 
-        it("should deactive a service", async function() {
-            let name = "Test.Service.Later";
-            let host = "localhost";
-            let port = 8231;
-            manager.deactivate(name, {host: "localhost", port: 8231});
-            sleep(1);
-            let list = await manager.list();
-            let target = list.filter(item => item.name === name)[0];
-            targetService = target.services.filter(item => item.host === host && item.port === port)[0];
-            assert(targetService && targetService.activated === false, `expect service to be successfully deactivated.`);
+        it("should return all services", async function() {
+            const services = await adminClient.listServices('Test.Service.Later');
+            assert(services.length == 1, `expect 1 service returned`);
         });
 
-        it("should active a service", async function() {
-            let name = "Test.Service.Later";
-            let host = "localhost";
-            let port = 8231;
-            manager.activate(name, {host: "localhost", port: 8231});
-            sleep(1);
-            let list = await manager.list();
-            let target = list.filter(item => item.name === name)[0];
-            targetService = target.services.filter(item => item.host === host && item.port === port)[0];
-            assert(targetService && targetService.activated === true, `expect service to be successfully deactivated.`);
+        it("should return correct number of services", async function() {
+            let services = await adminClient.listServices('Test.Service.Later');
+            assert(services.filter(_ => _.disabled === true).length  == 0, `expect 0 disabled service returned`);
+            await adminClient.disable('Test.Service.Later', {host:'localhost', port:8231});
+            services = await adminClient.listServices('Test.Service.Later');
+            assert(services.filter(_ => _.disabled === true).length == 1, `expect 1 disabled service returned`);
+            await adminClient.enable('Test.Service.Later', {host:'localhost', port:8231});
+            services = await adminClient.listServices('Test.Service.Later');
+            assert(services.filter(_ => _.disabled === true).length == 0, `expect 0 disabled service returned`);
         });
     });
 });
