@@ -88,7 +88,7 @@ module.exports = class {
         const remaining = [...publishers].filter(_ => _.data.name === socket.data.name).length;
         logger.info(`publisher(${socket.data.service.host}:${socket.data.service.port}) of service(${socket.data.name}) disconnected, remaining publisher(s) = ${remaining}`);
 
-        this._broadcast(socket.data.name);
+        this._notify(socket.data.name);
     }
 
     _handlePublish(socket, name, service) {
